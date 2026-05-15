@@ -17,6 +17,19 @@ export type ConnectionDetails = {
   participantToken: string;
 };
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Sandbox-Id',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(req: Request) {
   try {
     if (LIVEKIT_URL === undefined) {
@@ -53,12 +66,16 @@ export async function POST(req: Request) {
     };
     const headers = new Headers({
       'Cache-Control': 'no-store',
+      ...corsHeaders,
     });
     return NextResponse.json(data, { headers });
   } catch (error) {
     if (error instanceof Error) {
       console.error(error);
-      return new NextResponse(error.message, { status: 500 });
+      return new NextResponse(error.message, { 
+        status: 500,
+        headers: corsHeaders
+      });
     }
   }
 }
