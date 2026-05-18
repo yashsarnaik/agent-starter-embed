@@ -9,6 +9,7 @@ import { PopupView } from '@/components/embed-popup/popup-view';
 import { Trigger } from '@/components/embed-popup/trigger';
 import useConnectionDetails from '@/hooks/use-connection-details';
 import { type AppConfig, EmbedErrorDetails } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const PopupViewMotion = motion.create(PopupView);
 
@@ -20,6 +21,7 @@ function AgentClient({ appConfig }: EmbedFixedAgentClientProps) {
   const isAnimating = useRef(false);
   const room = useMemo(() => new Room(), []);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [error, setError] = useState<EmbedErrorDetails | null>(null);
   const { connectionDetails, refreshConnectionDetails, existingOrRefreshConnectionDetails } =
     useConnectionDetails(appConfig);
@@ -117,6 +119,7 @@ function AgentClient({ appConfig }: EmbedFixedAgentClientProps) {
         error={error}
         popupOpen={popupOpen}
         onToggle={handleTogglePopup}
+        isMaximized={isMaximized}
       />
 
       <motion.div
@@ -136,23 +139,34 @@ function AgentClient({ appConfig }: EmbedFixedAgentClientProps) {
         }}
         onAnimationStart={handlePanelAnimationStart}
         onAnimationComplete={handlePanelAnimationComplete}
-        className="fixed right-4 bottom-20 left-4 z-50 md:left-auto"
+        className={cn(
+          'fixed z-50',
+          isMaximized ? 'inset-0' : 'right-4 bottom-20 left-4 md:left-auto'
+        )}
       >
-        <div className="bg-bg1 dark:bg-bg2 border-separator1 dark:border-separator2 ml-auto h-[480px] w-full rounded-[28px] border border-solid drop-shadow-md md:w-[360px]">
+        <div
+          className={cn(
+            'bg-bg1 dark:bg-bg2 border-separator1 dark:border-separator2 border border-solid',
+            isMaximized ? 'h-screen w-screen' : 'ml-auto h-[480px] w-full rounded-[28px] drop-shadow-md md:w-[360px]'
+          )}
+        >
           <div className="relative h-full w-full">
             <ErrorMessage appConfig={appConfig} error={error} />
             {!error && (
               <PopupViewMotion
+                isMaximized={isMaximized}
+                onToggleMaximize={() => setIsMaximized(!isMaximized)}
+                onTogglePopup={handleTogglePopup}
                 appConfig={appConfig}
                 initial={{ opacity: 1 }}
                 animate={{ opacity: error === null ? 1 : 0 }}
                 transition={{
-                  type: 'linear',
                   duration: 0.2,
                 }}
                 disabled={!popupOpen}
                 sessionStarted={popupOpen}
                 onEmbedError={setError}
+                error={error}
                 className="absolute inset-0"
               />
             )}

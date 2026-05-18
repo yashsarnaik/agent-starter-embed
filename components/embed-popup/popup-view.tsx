@@ -21,7 +21,7 @@ import type { AppConfig, EmbedErrorDetails } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const TILE_TRANSITION = {
-  type: 'spring',
+  type: 'spring' as const,
   stiffness: 675,
   damping: 75,
   mass: 1,
@@ -48,6 +48,10 @@ type PopupProps = {
   disabled: boolean;
   sessionStarted: boolean;
   onEmbedError: React.Dispatch<React.SetStateAction<EmbedErrorDetails | null>>;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
+  onTogglePopup?: () => void;
+  error?: EmbedErrorDetails | null;
 };
 
 export const PopupView = ({
@@ -55,6 +59,10 @@ export const PopupView = ({
   disabled,
   sessionStarted,
   onEmbedError,
+  isMaximized = false,
+  onToggleMaximize,
+  onTogglePopup,
+  error,
   ref,
 }: React.ComponentProps<'div'> & PopupProps) => {
   useDebugMode();
@@ -65,6 +73,15 @@ export const PopupView = ({
     audioTrack: agentAudioTrack,
     videoTrack: agentVideoTrack,
   } = useVoiceAssistant();
+
+  const isAgentConnected =
+    sessionStarted &&
+    agentState !== 'disconnected' &&
+    agentState !== 'connecting' &&
+    agentState !== 'initializing';
+
+  const showEndCall = isMaximized && !error && isAgentConnected;
+
   const { isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
   const [screenShareTrack] = useTracks([Track.Source.ScreenShare]);
   const cameraTrack: TrackReference | undefined = useLocalTrackRef(Track.Source.Camera);
@@ -110,7 +127,8 @@ export const PopupView = ({
   return (
     <div ref={ref} inert={disabled} className="flex h-full w-full flex-col overflow-hidden">
       <div className="relative flex h-full shrink-1 grow-1 flex-col">
-        {/* Transcript */}
+        {/* Transcript/Message Panel - Shows chat and transcription messages */}
+        {/* Animates in when chat is opened, fades out when closed */}
         <TranscriptMotion
           initial={{
             y: 10,
@@ -232,7 +250,9 @@ export const PopupView = ({
           )}
         </AnimatePresence>
 
-        {/* Camera (Tile) */}
+        {/* Camera/Screen Share Tile - Shows user's camera or screen share in a small tile */}
+        {/* Displays when camera is enabled or screen share is active */}
+        {/* Animates position based on chat state: moves to top-right when chat is open */}
         <AnimatePresence>
           {((cameraTrack && isCameraEnabled) || (screenShareTrack && isScreenShareEnabled)) && (
             <motion.div
@@ -258,6 +278,7 @@ export const PopupView = ({
               transition={TILE_TRANSITION}
               className="border-separator1 dark:border-separator2 pointer-events-none absolute drop-shadow-lg/20"
             >
+              {/* Video track for camera or screen share */}
               <VideoTrack
                 trackRef={cameraTrack || screenShareTrack}
                 width={(cameraTrack || screenShareTrack)?.publication.dimensions?.width ?? 0}
@@ -284,8 +305,11 @@ export const PopupView = ({
         >
           <ActionBar
             capabilities={capabilities}
+            isMaximized={isMaximized}
+            onToggleMaximize={onToggleMaximize}
             onSendMessage={onSendMessage}
             onChatOpenChange={setChatOpen}
+            onEndCall={showEndCall ? onTogglePopup : undefined}
           />
         </motion.div>
       </div>

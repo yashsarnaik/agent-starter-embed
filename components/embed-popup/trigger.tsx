@@ -13,9 +13,10 @@ interface TriggerProps {
   error: EmbedErrorDetails | null;
   popupOpen: boolean;
   onToggle: () => void;
+  isMaximized?: boolean;
 }
 
-export function Trigger({ appConfig, error = null, popupOpen, onToggle }: TriggerProps) {
+export function Trigger({ appConfig, error = null, popupOpen, onToggle, isMaximized = false }: TriggerProps) {
   const { state: agentState } = useVoiceAssistant();
 
   const isAgentConnecting =
@@ -26,6 +27,12 @@ export function Trigger({ appConfig, error = null, popupOpen, onToggle }: Trigge
     agentState !== 'disconnected' &&
     agentState !== 'connecting' &&
     agentState !== 'initializing';
+
+  // Completely hide trigger when popup is open in maximized mode
+  // since all actions are available in the ActionBar
+  if (popupOpen && isMaximized) {
+    return null;
+  }
 
   return (
     <AnimatePresence>
@@ -46,61 +53,30 @@ export function Trigger({ appConfig, error = null, popupOpen, onToggle }: Trigge
         }}
         onClick={onToggle}
         className={cn(
-          'relative m-0 block size-12 p-0.5 drop-shadow-md',
+          'relative m-0 block p-0 drop-shadow-md overflow-hidden',
           'scale-100 transition-[scale] duration-300 hover:scale-105 focus:scale-105',
-          'fixed right-4 bottom-4 z-50'
+          'fixed rounded-full',
+          isMaximized ? 'z-[60] right-6 bottom-16 size-12' : 'z-50 right-4 bottom-4 size-16'
         )}
       >
-        {/* ring */}
-        <motion.div
-          className={cn(
-            'absolute inset-0 z-10 rounded-full transition-colors',
-            !popupOpen && 'bg-fgAccent',
-            !error &&
-              isAgentConnecting &&
-              'bg-fgAccent/30 animate-spin [background-image:conic-gradient(from_0deg,transparent_0%,transparent_30%,var(--color-fgAccent)_50%,transparent_70%,transparent_100%)]',
-            (isAgentConnected || (error && popupOpen)) && 'bg-destructive-foreground'
+        <AnimatePresence>
+          {!popupOpen && (
+            <motion.div
+              key="lk-logo"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="h-full w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={appConfig.logo || '/henry.png'}
+                alt={`${appConfig.companyName || 'Henry'}`}
+                className="h-full w-full rounded-full object-cover"
+              />
+            </motion.div>
           )}
-        />
-        {/* icon */}
-        <div
-          className={cn(
-            'relative z-20 grid size-11 place-items-center rounded-full transition-colors',
-            !popupOpen && 'bg-fgAccent',
-            !error && isAgentConnecting && 'bg-bg1',
-            (isAgentConnected || (error && popupOpen)) && 'bg-destructive'
-          )}
-        >
-          <AnimatePresence>
-            {!popupOpen && (
-              <motion.div
-                key="lk-logo"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: popupOpen ? 20 : -20 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-              >
-                {appConfig.logo ? (
-                  // Custom logo: render as <img> to preserve original colors
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={appConfig.logo}
-                    alt={`${appConfig.companyName || 'LiveKit'}`}
-                    className="size-5 rounded-sm object-contain"
-                  />
-                ) : (
-                  // Default LiveKit mark: use CSS mask for single-color treatment
-                  <div
-                    className="bg-bg1 size-5"
-                    style={{
-                      maskImage: 'url(/lk-logo.svg)',
-                      maskSize: 'contain',
-                    }}
-                  />
-                )}
-              </motion.div>
-            )}
-            {(isAgentConnecting || (error && popupOpen)) && (
+            {(isAgentConnecting || (error && popupOpen)) && !isMaximized && (
               <motion.div
                 key="dismiss"
                 initial={{ opacity: 0, y: 20 }}
@@ -115,7 +91,7 @@ export function Trigger({ appConfig, error = null, popupOpen, onToggle }: Trigge
                 />
               </motion.div>
             )}
-            {!error && isAgentConnected && (
+            {!error && isAgentConnected && !isMaximized && (
               <motion.div
                 key="disconnect"
                 initial={{ opacity: 0, y: 20 }}
@@ -130,8 +106,22 @@ export function Trigger({ appConfig, error = null, popupOpen, onToggle }: Trigge
                 />
               </motion.div>
             )}
-          </AnimatePresence>
-        </div>
+            {popupOpen && isMaximized && (
+              <motion.div
+                key="dismiss-maximized"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: popupOpen ? -20 : 20 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+              >
+                <XIcon
+                  size={20}
+                  weight="bold"
+                  className={cn('text-fg0 size-5', error && 'text-destructive-foreground')}
+                />
+              </motion.div>
+            )}
+        </AnimatePresence>
       </AnimatedButton>
     </AnimatePresence>
   );

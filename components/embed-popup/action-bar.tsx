@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useCallback } from 'react';
 import { Track } from 'livekit-client';
 import { BarVisualizer, useRemoteParticipants } from '@livekit/components-react';
-import { ChatTextIcon } from '@phosphor-icons/react/dist/ssr';
+import { ChatTextIcon, CornersOutIcon, CornersInIcon, PhoneDisconnectIcon } from '@phosphor-icons/react/dist/ssr';
 import { ChatInput } from '@/components/livekit/chat/chat-input';
 import { DeviceSelect } from '@/components/livekit/device-select';
 import { TrackToggle } from '@/components/livekit/track-toggle';
@@ -20,6 +20,9 @@ export interface AgentControlBarProps
   onChatOpenChange?: (open: boolean) => void;
   onSendMessage?: (message: string) => Promise<void>;
   onDeviceError?: (error: { source: Track.Source; error: Error }) => void;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
+  onEndCall?: () => void;
 }
 
 /**
@@ -33,6 +36,9 @@ export function ActionBar({
   onSendMessage,
   onChatOpenChange,
   onDeviceError,
+  isMaximized = false,
+  onToggleMaximize,
+  onEndCall,
   ...props
 }: AgentControlBarProps) {
   const participants = useRemoteParticipants();
@@ -154,7 +160,7 @@ export function ActionBar({
             </div>
           )}
 
-          {capabilities.supportsVideoInput && visibleControls.camera && (
+          {/* {capabilities.supportsVideoInput && visibleControls.camera && (
             <div className="flex items-center gap-0">
               <TrackToggle
                 variant="primary"
@@ -180,10 +186,34 @@ export function ActionBar({
                 ])}
               />
             </div>
-          )}
+          )} */}
         </div>
         <div className="flex gap-1">
-          {capabilities.supportsScreenShare && visibleControls.screenShare && (
+          {onToggleMaximize && (
+            <Toggle
+              variant="secondary"
+              aria-label={isMaximized ? "Minimize" : "Maximize"}
+              pressed={false}
+              onPressedChange={onToggleMaximize}
+              className="aspect-square h-full"
+            >
+              {isMaximized ? <CornersInIcon weight="bold" /> : <CornersOutIcon weight="bold" />}
+            </Toggle>
+          )}
+
+          {onEndCall && (
+            <Toggle
+              variant="secondary"
+              aria-label="End call"
+              pressed={false}
+              onPressedChange={onEndCall}
+              className="aspect-square h-full text-destructive-foreground"
+            >
+              <PhoneDisconnectIcon weight="bold" />
+            </Toggle>
+          )}
+
+          {/* {capabilities.supportsScreenShare && visibleControls.screenShare && (
             <div className="flex items-center gap-0">
               <TrackToggle
                 variant="secondary"
@@ -194,7 +224,7 @@ export function ActionBar({
                 className="relative w-auto"
               />
             </div>
-          )}
+          )} */}
 
           {visibleControls.chat && (
             <Toggle

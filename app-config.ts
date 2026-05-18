@@ -11,6 +11,6 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   companyName: 'LiveKit',
   accent: '#002cf2',
   accentDark: '#1fd5f9',
-  logo: '/lk-logo.svg',
-  logoDark: '/lk-logo-dark.svg',
+  logo: '/henry.png',
+  logoDark: '/henry.png',
 };
